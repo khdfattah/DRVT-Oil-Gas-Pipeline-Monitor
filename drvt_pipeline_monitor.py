@@ -274,7 +274,7 @@ with tab1:
 
   st.divider()
   st.subheader(T["tbl_header"])
-  scenarios =
+  scenarios = [0, 5, 10, 15, 20, 25, 30, 35, 40]
   rows = []
   for s in scenarios:
     r = s / 100.0
@@ -314,4 +314,3 @@ with tab1:
           "ROD (GWT)": f"{rod_g:.3e}",
           "ROD (UT)": f"{rod_u:.3e}",
           "ROD (EM)": f"{rod_e:.3e}",
-          "C_index": f"{c_idx:.3e}",
