@@ -3,15 +3,13 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="DRVT - NDT Pipeline Monitor", layout="wide")
+st.set_page_config(page_title="DRVT Oil & Gas Pipeline Monitor", layout="wide")
 
-# زر اختيار اللغة
 lang = st.sidebar.radio(
     "🌐 Language / اللغة", ("العربية", "English"), horizontal=True
 )
 is_ar = lang == "العربية"
 
-# ضبط اتجاه الصفحة
 if is_ar:
   st.markdown(
       "<style>.main, .stSidebar { direction: rtl; text-align: right; } h1, h2,"
@@ -25,13 +23,8 @@ else:
       unsafe_allow_html=True,
   )
 
-# قاموس النصوص
 T = {
-    "title": (
-        "🔬 نظام مراقبة سلامة الأنابيب بنظرية الحجم الرنيني الديناميكي (DRVT)"
-        if is_ar
-        else "🔬 DRVT Pipeline Integrity Monitoring System (NDT)"
-    ),
+    "title": "🔬 DRVT Oil & Gas Pipeline Monitor",
     "author_box": (
         "**إعداد وتطوير:** د. خالد عبدالفتاح محمد عثمان | معهد مروي التكنولوجي،"
         " جامعة مروي التكنولوجية، السودان (`khdfattah@gmail.com`)"
@@ -175,15 +168,13 @@ T = {
 st.title(T["title"])
 st.info(T["author_box"])
 
-# الشريط الجانبي
 st.sidebar.header(T["sb_header"])
 ndt_choice = st.sidebar.selectbox(T["ndt_select_label"], T["ndt_options"])
 
-# تحديد الخيار المختار برمجياً
-opt_all = ndt_choice == T["ndt_options"][0]
-opt_gwt = ndt_choice == T["ndt_options"][1]
-opt_ut = ndt_choice == T["ndt_options"][2]
-opt_em = ndt_choice == T["ndt_options"][3]
+opt_all = ndt_choice == T["ndt_options"]
+opt_gwt = ndt_choice == T["ndt_options"]
+opt_ut = ndt_choice == T["ndt_options"]
+opt_em = ndt_choice == T["ndt_options"]
 
 st.sidebar.subheader(T["sb_pipe"])
 D_out_inch = st.sidebar.number_input(T["d_out"], value=12.75, step=0.25)
@@ -214,65 +205,65 @@ if opt_all or opt_em:
 
 defect_pct = st.sidebar.slider(T["defect"], 0, 50, 15)
 
-# الثوابت الفيزيائية
-V_eq_nm3 = 286.398
-V_eq_m3 = V_eq_nm3 * 1e-27
+# الثوابت والتحويلات
+V_eq_m3 = 286.398 * 1e-27
 h = 6.6261e-34
 c = 299792458.0
 v_s = 5900.0
 d_p = 0.0127
+denom_const = 2.0 * np.pi * h * (c**2)
 
 D_out = D_out_inch * 0.0254
 t_nom = t_nom_mm / 1000.0
-D_in = D_out - 2 * t_nom
+D_in = D_out - 2.0 * t_nom
 Pg_pa = Pg_bar * 100000.0
 
-# الحسابات الأساسية
-ratio = defect_pct / 100.0
-Q_curr = Q_base * (1 - 0.5 * ratio)
-
-# 1. GWT
-t_curr_gwt = t_nom * (1 - ratio)
-D_in_curr_gwt = D_out - 2 * t_curr_gwt
-V_cav_gwt = (np.pi / 4) * L_m * (D_out**2 - D_in_curr_gwt**2)
-N_res_gwt = V_cav_gwt / V_eq_m3
-lam_gwt = v_s / (f_gwt_khz * 1000)
-N_wav_gwt = (P_watt * Q_curr * (lam_gwt**2)) / (2 * np.pi * h * (c**2))
-ROD_gwt = N_wav_gwt / N_res_gwt
-
-V_cav_gwt_0 = (np.pi / 4) * L_m * (D_out**2 - D_in**2)
-N_wav_gwt_0 = (P_watt * Q_base * (lam_gwt**2)) / (2 * np.pi * h * (c**2))
-ROD_gwt_0 = N_wav_gwt_0 / (V_cav_gwt_0 / V_eq_m3)
-diff_gwt = ((ROD_gwt - ROD_gwt_0) / ROD_gwt_0) * 100
-
-# 2. UT
-V_cav_ut = (np.pi / 4) * (d_p**2) * t_curr_gwt
-N_res_ut = V_cav_ut / V_eq_m3
+lam_gwt = v_s / (f_gwt_khz * 1000.0)
 lam_ut = v_s / (f_ut_mhz * 1e6)
-N_wav_ut = (P_watt * Q_curr * (lam_ut**2)) / (2 * np.pi * h * (c**2))
-ROD_ut = N_wav_ut / N_res_ut
-
-V_cav_ut_0 = (np.pi / 4) * (d_p**2) * t_nom
-N_wav_ut_0 = (P_watt * Q_base * (lam_ut**2)) / (2 * np.pi * h * (c**2))
-ROD_ut_0 = N_wav_ut_0 / (V_cav_ut_0 / V_eq_m3)
-diff_ut = ((ROD_ut - ROD_ut_0) / ROD_ut_0) * 100
-
-# 3. EM
-D_eff_em = D_in * (1 - ratio)
-Pg_curr = Pg_pa * (1 + 0.4 * ratio)
-V_cav_em = (np.pi / 4) * (D_eff_em**2) * L_m
-N_res_em = V_cav_em / V_eq_m3
 lam_em = c / ((f_em_ghz * 1e9) * np.sqrt(eps_r))
-N_ph_em = (P_watt * Q_curr * (lam_em**2)) / (2 * np.pi * h * (c**2))
-ROD_em = N_ph_em / N_res_em
-GDI_curr = 14369.0 / Pg_curr
-C_index = ROD_em / GDI_curr
 
-V_cav_em_0 = (np.pi / 4) * (D_in**2) * L_m
-N_ph_em_0 = (P_watt * Q_base * (lam_em**2)) / (2 * np.pi * h * (c**2))
-ROD_em_0 = N_ph_em_0 / (V_cav_em_0 / V_eq_m3)
-C_index_0 = ROD_em_0 / (14369.0 / Pg_pa)
-diff_c = ((C_index - C_index_0) / C_index_0) * 100
+
+# دالة مساعدة للحسابات لتجنب تكرار المعادلات الطويلة
+def calc_metrics(pct):
+  r = pct / 100.0
+  q = Q_base * (1.0 - 0.5 * r)
+  t_c = t_nom * (1.0 - r)
+  d_in_c = D_out - 2.0 * t_c
+  d_eff_c = D_in * (1.0 - r)
+  pg_c = Pg_pa * (1.0 + 0.4 * r)
+
+  # GWT
+  vcav_g = (np.pi / 4.0) * L_m * (D_out**2 - d_in_c**2)
+  nres_g = vcav_g / V_eq_m3
+  nwav_g = (P_watt * q * (lam_gwt**2)) / denom_const
+  rod_g = nwav_g / nres_g
+
+  # UT
+  vcav_u = (np.pi / 4.0) * (d_p**2) * t_c
+  nres_u = vcav_u / V_eq_m3
+  nwav_u = (P_watt * q * (lam_ut**2)) / denom_const
+  rod_u = nwav_u / nres_u
+
+  # EM
+  vcav_e = (np.pi / 4.0) * (d_eff_c**2) * L_m
+  nres_e = vcav_e / V_eq_m3
+  nph_e = (P_watt * q * (lam_em**2)) / denom_const
+  rod_e = nph_e / nres_e
+  gdi = 14369.0 / pg_c
+  c_idx = rod_e / gdi
+
+  return q, t_c, d_eff_c, rod_g, rod_u, rod_e, c_idx
+
+
+# القيم المرجعية والقيم الحالية
+_, _, _, ROD_gwt_0, ROD_ut_0, ROD_em_0, C_index_0 = calc_metrics(0)
+Q_curr, t_curr_gwt, D_eff_em, ROD_gwt, ROD_ut, ROD_em, C_index = calc_metrics(
+    defect_pct
+)
+
+diff_gwt = ((ROD_gwt - ROD_gwt_0) / ROD_gwt_0) * 100.0
+diff_ut = ((ROD_ut - ROD_ut_0) / ROD_ut_0) * 100.0
+diff_c = ((C_index - C_index_0) / C_index_0) * 100.0
 
 # التبويبات
 tab1, tab2, tab3 = st.tabs(T["tabs"])
@@ -303,17 +294,30 @@ with tab1:
 
   st.divider()
   st.subheader(T["tbl_header"])
-  scenarios = tuple(range(0, 45, 5))
   rows = []
-  for s in scenarios:
-    r = s / 100.0
-    q = Q_base * (1 - 0.5 * r)
-    t_c = t_nom * (1 - r)
-    d_in_c = D_out - 2 * t_c
-    d_eff_c = D_in * (1 - r)
-    pg_c = Pg_pa * (1 + 0.4 * r)
+  for s in range(0, 45, 5):
+    _, t_c, d_eff_c, rod_g, rod_u, rod_e, c_idx = calc_metrics(s)
+    shift_val = ((c_idx - C_index_0) / C_index_0) * 100.0
 
-    rod_g = ((P_watt * q * (lam_gwt**2)) / (2 * np.pi * h * (c**2))) / (
-        ((np.pi / 4) * L_m * (D_out**2 - d_in_c**2)) / V_eq_m3
-    )
-    rod_u = ((P_watt * q * (lam_ut**2)) / (2 * np.pi * h * (c**2))) / (
+    row_dict = {}
+    if is_ar:
+      row_dict["نسبة العيب (%)"] = f"{s}%"
+      if opt_all or opt_gwt or opt_ut:
+        row_dict["السُمك المتبقي (مم)"] = round(t_c * 1000, 2)
+      if opt_all or opt_em:
+        row_dict["القطر الفعلي (مم)"] = round(d_eff_c * 1000, 1)
+      if opt_all or opt_gwt:
+        row_dict["ROD (GWT)"] = f"{rod_g:.3e}"
+      if opt_all or opt_ut:
+        row_dict["ROD (UT)"] = f"{rod_u:.3e}"
+      if opt_all or opt_em:
+        row_dict["ROD (EM)"] = f"{rod_e:.3e}"
+        row_dict["مؤشر الانسداد C_index"] = f"{c_idx:.3e}"
+        row_dict["تغير مؤشر الانسداد"] = f"{shift_val:+.1f}%"
+    else:
+      row_dict["Defect (%)"] = f"{s}%"
+      if opt_all or opt_gwt or opt_ut:
+        row_dict["Remaining Wall (mm)"] = round(t_c * 1000, 2)
+      if opt_all or opt_em:
+        row_dict["Effective ID (mm)"] = round(d_eff_c * 1000, 1)
+      if opt_all or opt_gwt:
