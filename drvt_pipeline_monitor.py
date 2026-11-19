@@ -52,9 +52,9 @@ st.info(T["author_box"])
 ndt_choice = st.sidebar.selectbox(T["ndt_select_label"], T["ndt_options"])
 defect_pct = st.sidebar.slider(T["defect"], 0, 50, 15)
 
-opt_gwt = ndt_choice == T["ndt_options"][0]
-opt_ut = ndt_choice == T["ndt_options"][1]
-opt_em = ndt_choice == T["ndt_options"][2]
+opt_gwt = ndt_choice == T["ndt_options"]
+opt_ut = ndt_choice == T["ndt_options"]
+opt_em = ndt_choice == T["ndt_options"]
 
 # قسم المدخلات الكاملة للمطابقة مع ملف الإكسيل
 with st.sidebar.expander(T["exp_inputs"], expanded=True):
@@ -151,7 +151,6 @@ with tab1:
     st.divider()
     st.subheader(T["tbl_header"])
     rows = []
-    # نفس نسب الإكسيل (0% إلى 30% بخطوة 5% ثم 40%)
     for s in (0, 5, 10, 15, 20, 25, 30, 40):
         q_s, t_c, d_eff_c, pg_c, nres_g, rod_g, nres_u, rod_u, nres_e, rod_e, gdi_s, c_idx = calc_metrics(s)
         
@@ -209,3 +208,5 @@ with tab2:
     x_vals = list(range(0, 41, 1))
     y_vals = []
     for s in x_vals:
+        _, _, _, _, _, rod_g, _, rod_u, _, _, _, c_idx = calc_metrics(s)
+        if opt_gwt:
