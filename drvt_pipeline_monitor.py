@@ -5,7 +5,7 @@ import streamlit as st
 
 st.set_page_config(page_title="DRVT Oil & Gas Pipeline Monitor", layout="wide")
 
-lang = st.sidebar.radio("🌐 Language / اللغة", ("العربية", "English"), horizontal=True)
+lang = st.sidebar.radio("🌐 Language / اللغة", ("English", "العربية"), horizontal=True)
 is_ar = (lang == "العربية")
 
 if is_ar:
@@ -22,7 +22,7 @@ if is_ar:
     defect_pct = st.sidebar.slider("نسبة التآكل / الترسبات المستهدفة (%)", 0, 50, 15)
     exp_label = "⚙️ مدخلات الأنبوب والجهاز (للمطابقة مع الإكسيل)"
 else:
-    st.info("**Author:** Dr. Khalid Abdel Fattah Mohamed Osman | Merowe Institute of Technology, Merowe University of Technology, Sudan (`khdfattah@gmail.com`)")
+    st.info("**Author:** Dr. Khalid Abdel Fattah Mohamed Osman | Merowe Institute of Technology, Merowe University of Technology, Sudan")
     ndt_opts = ("Guided Wave Testing (GWT)", "Ultrasonic Thickness (UT)", "Internal Microwave (EM)")
     ndt_choice = st.sidebar.selectbox("🔍 NDT Device Type:", ndt_opts)
     defect_pct = st.sidebar.slider("Target Corrosion / Scaling (%)", 0, 50, 15)
@@ -133,7 +133,7 @@ with tab3:
         st_txt = "حالة حرجة (تدخل عاجل)" if is_ar else "Critical Condition (Immediate Action)"
 
     val_str = f"ROD_GWT = {rod_g_now:.4e} ({diff_g:+.2f}%)" if opt_gwt else (f"ROD_UT = {rod_u_now:.4e} ({diff_u:+.2f}%)" if opt_ut else f"C_index = {c_idx_now:.4e} ({diff_c:+.2f}%)")
-    rep = f"### DRVT Pipeline Integrity Report\n**Author:** Dr. Khalid Abdel Fattah Mohamed Osman — Merowe Institute of Technology, Merowe University of Technology, Sudan\n\n* **Method:** {ndt_choice}\n* **Dimensions:** OD={D_out_inch} in, t={t_nom_mm} mm, L={L_m} m\n* **Defect Ratio:** {defect_pct}%\n* **Status:** {st_txt}\n* **Result:** `{val_str}`"
+    rep = f"### DRVT Pipeline Integrity Report\n**Technical Report\n\n* **Method:** {ndt_choice}\n* **Dimensions:** OD={D_out_inch} in, t={t_nom_mm} mm, L={L_m} m\n* **Defect Ratio:** {defect_pct}%\n* **Status:** {st_txt}\n* **Result:** `{val_str}`"
     st.markdown(rep)
     st.download_button("📥 Download Report (.txt)", data=rep, file_name=f"DRVT_Report_{defect_pct}pct.txt")
 
