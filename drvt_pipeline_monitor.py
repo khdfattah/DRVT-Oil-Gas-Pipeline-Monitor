@@ -14,22 +14,14 @@ is_ar = lang == "العربية"
 # ضبط اتجاه الصفحة تلقائياً حسب اللغة المختارة
 if is_ar:
   st.markdown(
-      """
-    <style>
-        .main, .stSidebar { direction: rtl; text-align: right; }
-        h1, h2, h3, p, div, label { text-align: right; }
-    </style>
-    """,
+      "<style>.main, .stSidebar { direction: rtl; text-align: right; } h1, h2,"
+      " h3, p, div, label { text-align: right; }</style>",
       unsafe_allow_html=True,
   )
 else:
   st.markdown(
-      """
-    <style>
-        .main, .stSidebar { direction: ltr; text-align: left; }
-        h1, h2, h3, p, div, label { text-align: left; }
-    </style>
-    """,
+      "<style>.main, .stSidebar { direction: ltr; text-align: left; } h1, h2,"
+      " h3, p, div, label { text-align: left; }</style>",
       unsafe_allow_html=True,
   )
 
@@ -43,8 +35,8 @@ T = {
         )
     ),
     "author_box": (
-        "**إعداد وتطوير:** د. خالد عبد الفتاح | معهد مروي للتكنولوجيا، جامعة"
-        " مروي للتكنولوجيا، السودان (`khdfattah@gmail.com`)"
+        "**إعداد وتطوير:** د. خالد عبد الفتاح | معهد مروي التكنولوجي، جامعة"
+        " مروي التكنولوجية، السودان (`khdfattah@gmail.com`)"
         if is_ar
         else (
             "**Author:** Dr. Khalid Abdel Fattah | Merowe Institute of"
@@ -274,7 +266,7 @@ with tab1:
 
   st.divider()
   st.subheader(T["tbl_header"])
-  scenarios = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+  scenarios = [0, 5, 10, 15, 20, 30, 40]
   rows = []
   for s in scenarios:
     r = s / 100.0
@@ -294,9 +286,10 @@ with tab1:
         ((np.pi / 4) * (d_eff_c**2) * L_m) / V_eq_m3
     )
     c_idx = rod_e / (14369.0 / pg_c)
+    shift_val = ((c_idx - C_index_0) / C_index_0) * 100
 
     if is_ar:
-      rows.append({
+      row_dict = {
           "نسبة العيب (%)": f"{s}%",
           "السُمك المتبقي (مم)": round(t_c * 1000, 2),
           "القطر الفعلي (مم)": round(d_eff_c * 1000, 1),
@@ -304,13 +297,14 @@ with tab1:
           "ROD (UT)": f"{rod_u:.3e}",
           "ROD (EM)": f"{rod_e:.3e}",
           "مؤشر الانسداد C_index": f"{c_idx:.3e}",
-          "تغير مؤشر الانسداد": f"{((c_idx - C_index_0)/C_index_0)*100:+.1f}%",
-      })
+          "تغير مؤشر الانسداد": f"{shift_val:+.1f}%",
+      }
     else:
-      rows.append({
+      row_dict = {
           "Defect (%)": f"{s}%",
           "Remaining Wall (mm)": round(t_c * 1000, 2),
           "Effective ID (mm)": round(d_eff_c * 1000, 1),
           "ROD (GWT)": f"{rod_g:.3e}",
           "ROD (UT)": f"{rod_u:.3e}",
           "ROD (EM)": f"{rod_e:.3e}",
+          "C_index": f"{c_idx:.3e}",
