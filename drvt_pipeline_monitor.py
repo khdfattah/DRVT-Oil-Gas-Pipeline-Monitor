@@ -16,10 +16,21 @@ else:
 T = {
     "title": "🔬 DRVT Oil & Gas Pipeline Monitor",
     "author_box": "**إعداد وتطوير:** د. خالد عبدالفتاح محمد عثمان | معهد مروي التكنولوجي، جامعة مروي التكنولوجية، السودان (`khdfattah@gmail.com`)" if is_ar else "**Author:** Dr. Khalid Abdel Fattah Mohamed Osman | Merowe Institute of Technology, Merowe University of Technology, Sudan (`khdfattah@gmail.com`)",
-    "ndt_select_label": "🔍 اختر نوع الجهاز اللاتلافي (NDT):" if is_ar else "🔍 Select NDT Device Type:",
+    "ndt_select_label": "🔍 نوع الجهاز اللاتلافي (NDT):" if is_ar else "🔍 NDT Device Type:",
     "ndt_options": ("الموجات الموجهة (GWT)", "الموجات فوق الصوتية (UT)", "الميكروويف الداخلي (EM)") if is_ar else ("Guided Wave Testing (GWT)", "Ultrasonic Thickness (UT)", "Internal Microwave (EM)"),
-    "defect": "نسبة التآكل / الترسبات (%)" if is_ar else "Corrosion / Scaling Ratio (%)",
-    "tabs": ("📊 النتائج", "📈 الرسم البياني", "📄 التقرير") if is_ar else ("📊 Results", "📈 Chart", "📄 Report"),
+    "defect": "نسبة التآكل / الترسبات المستهدفة (%)" if is_ar else "Target Corrosion / Scaling (%)",
+    "exp_inputs": "⚙️ مدخلات الأنبوب والجهاز (للمطابقة مع الإكسيل)" if is_ar else "⚙️ Pipeline & Device Inputs (Excel Match)",
+    "d_out": "القطر الخارجي (بوصة)" if is_ar else "Outer Diameter D_out (in)",
+    "t_nom": "سُمك الجدار الاسمي (مم)" if is_ar else "Nominal Wall Thickness t (mm)",
+    "l_m": "طول المقطع المفحوص (متر)" if is_ar else "Inspected Length L (m)",
+    "p_watt": "قدرة الإرسال P (واط)" if is_ar else "Transmitted Power P (W)",
+    "q_base": "معامل الجودة المرجعي Q₀" if is_ar else "Baseline Quality Factor Q₀",
+    "f_gwt": "تردد GWT (كيلوهرتز)" if is_ar else "GWT Frequency (kHz)",
+    "f_ut": "تردد UT (ميجاهرتز)" if is_ar else "UT Frequency (MHz)",
+    "f_em": "تردد EM (جيجاهرتز)" if is_ar else "EM Frequency (GHz)",
+    "pg_bar": "ضغط الغاز الطبيعي (بار)" if is_ar else "Gas Pressure Pg (bar)",
+    "eps_r": "ثابت العزل εr" if is_ar else "Permittivity εr",
+    "tabs": ("📊 النتائج والجداول", "📈 الرسم البياني", "📄 التقرير الفني") if is_ar else ("📊 Results & Tables", "📈 Chart", "📄 Technical Report"),
     "res_header": "نتيجة الفحص عند نسبة عيب:" if is_ar else "Inspection Result at Defect Ratio:",
     "m_gwt": "ROD - الموجات الموجهة (GWT)" if is_ar else "ROD - Guided Wave (GWT)",
     "c_gwt": "سُمك الجدار المتبقي:" if is_ar else "Remaining Wall Thickness:",
@@ -28,7 +39,7 @@ T = {
     "m_em": "مؤشر الانسداد (C_index - EM)" if is_ar else "Clogging Index (C_index - EM)",
     "c_em": "القطر الداخلي الفعلي:" if is_ar else "Effective Inner Diameter:",
     "unit_mm": "مم" if is_ar else "mm",
-    "tbl_header": "جدول القيم المتدرجة (0% إلى 40%)" if is_ar else "Progressive Values Table (0% to 40%)",
+    "tbl_header": "جدول المحاكاة المتدرج (مطابق لملف الإكسيل)" if is_ar else "Progressive Simulation Table (Matches Excel)",
     "chart_header": "منحنى استجابة الجهاز لتفاقم الصدأ والترسبات" if is_ar else "Device Response vs. Corrosion & Scaling Progression",
     "rep_header": "التقرير الفني لحالة الأنبوب" if is_ar else "Technical Pipeline Integrity Report",
     "dl_btn": "📥 تحميل التقرير (.txt)" if is_ar else "📥 Download Report (.txt)",
@@ -37,26 +48,38 @@ T = {
 st.title(T["title"])
 st.info(T["author_box"])
 
-# الشريط الجانبي: زر اختيار الجهاز فقط + نسبة العيب
+# الشريط الجانبي
 ndt_choice = st.sidebar.selectbox(T["ndt_select_label"], T["ndt_options"])
 defect_pct = st.sidebar.slider(T["defect"], 0, 50, 15)
 
-opt_gwt = ndt_choice == T["ndt_options"]
-opt_ut = ndt_choice == T["ndt_options"]
-opt_em = ndt_choice == T["ndt_options"]
+opt_gwt = ndt_choice == T["ndt_options"][0]
+opt_ut = ndt_choice == T["ndt_options"][1]
+opt_em = ndt_choice == T["ndt_options"][2]
 
-# القيم القياسية الثابتة داخلياً (أنبوب 12 بوصة قياسي)
-D_out_inch = 12.75
-t_nom_mm = 9.53
-L_m = 10.0
-P_watt = 50.0
-Q_base = 1000.0
-f_gwt_khz = 32.0
-f_ut_mhz = 5.0
-f_em_ghz = 2.4
-Pg_bar = 50.0
-eps_r = 1.05
+# قسم المدخلات الكاملة للمطابقة مع ملف الإكسيل
+with st.sidebar.expander(T["exp_inputs"], expanded=True):
+    D_out_inch = st.number_input(T["d_out"], value=12.75, step=0.25)
+    t_nom_mm = st.number_input(T["t_nom"], value=9.53, step=0.01)
+    L_m = st.number_input(T["l_m"], value=10.0, step=1.0)
+    P_watt = st.number_input(T["p_watt"], value=50.0, step=5.0)
+    Q_base = st.number_input(T["q_base"], value=1000.0, step=100.0)
+    
+    f_gwt_khz = 32.0
+    f_ut_mhz = 5.0
+    f_em_ghz = 2.4
+    Pg_bar = 50.0
+    eps_r = 1.05
+    
+    if opt_gwt:
+        f_gwt_khz = st.number_input(T["f_gwt"], value=32.0, step=1.0)
+    elif opt_ut:
+        f_ut_mhz = st.number_input(T["f_ut"], value=5.0, step=0.5)
+    elif opt_em:
+        f_em_ghz = st.number_input(T["f_em"], value=2.4, step=0.1)
+        Pg_bar = st.number_input(T["pg_bar"], value=50.0, step=5.0)
+        eps_r = st.number_input(T["eps_r"], value=1.05, step=0.01)
 
+# الثوابت الفيزيائية المطابقة للإكسيل
 V_eq_m3 = 286.398 * 1e-27
 h = 6.6261e-34
 c = 299792458.0
@@ -81,20 +104,30 @@ def calc_metrics(pct):
     d_eff_c = D_in * (1.0 - r)
     pg_c = Pg_pa * (1.0 + 0.4 * r)
 
+    # 1. GWT
     vcav_g = (np.pi / 4.0) * L_m * (D_out ** 2 - d_in_c ** 2)
-    rod_g = ((P_watt * q * (lam_gwt ** 2)) / denom_const) / (vcav_g / V_eq_m3)
+    nres_g = vcav_g / V_eq_m3
+    nwav_g = (P_watt * q * (lam_gwt ** 2)) / denom_const
+    rod_g = nwav_g / nres_g
 
+    # 2. UT
     vcav_u = (np.pi / 4.0) * (d_p ** 2) * t_c
-    rod_u = ((P_watt * q * (lam_ut ** 2)) / denom_const) / (vcav_u / V_eq_m3)
+    nres_u = vcav_u / V_eq_m3
+    nwav_u = (P_watt * q * (lam_ut ** 2)) / denom_const
+    rod_u = nwav_u / nres_u
 
+    # 3. EM
     vcav_e = (np.pi / 4.0) * (d_eff_c ** 2) * L_m
-    rod_e = ((P_watt * q * (lam_em ** 2)) / denom_const) / (vcav_e / V_eq_m3)
-    c_idx = rod_e / (14369.0 / pg_c)
+    nres_e = vcav_e / V_eq_m3
+    nph_e = (P_watt * q * (lam_em ** 2)) / denom_const
+    rod_e = nph_e / nres_e
+    gdi = 14369.0 / pg_c
+    c_idx = rod_e / gdi
 
-    return q, t_c, d_eff_c, rod_g, rod_u, rod_e, c_idx
+    return q, t_c, d_eff_c, pg_c, nres_g, rod_g, nres_u, rod_u, nres_e, rod_e, gdi, c_idx
 
-_, _, _, ROD_gwt_0, ROD_ut_0, ROD_em_0, C_index_0 = calc_metrics(0)
-Q_curr, t_curr_gwt, D_eff_em, ROD_gwt, ROD_ut, ROD_em, C_index = calc_metrics(defect_pct)
+_, _, _, _, _, ROD_gwt_0, _, ROD_ut_0, _, ROD_em_0, _, C_index_0 = calc_metrics(0)
+Q_curr, t_curr_gwt, D_eff_em, Pg_curr, Nres_g, ROD_gwt, Nres_u, ROD_ut, Nres_e, ROD_em, GDI_curr, C_index = calc_metrics(defect_pct)
 
 diff_gwt = ((ROD_gwt - ROD_gwt_0) / ROD_gwt_0) * 100.0
 diff_ut = ((ROD_ut - ROD_ut_0) / ROD_ut_0) * 100.0
@@ -106,127 +139,73 @@ with tab1:
     st.subheader(f"{T['res_header']} {defect_pct}%")
 
     if opt_gwt:
-        st.metric(T["m_gwt"], f"{ROD_gwt:.3e}", f"{diff_gwt:+.2f}%")
-        st.caption(f"{T['c_gwt']} {t_curr_gwt*1000:.2f} {T['unit_mm']}")
+        st.metric(T["m_gwt"], f"{ROD_gwt:.4e}", f"{diff_gwt:+.2f}%")
+        st.caption(f"{T['c_gwt']} {t_curr_gwt*1000:.2f} {T['unit_mm']} | Q = {Q_curr:.0f}")
     elif opt_ut:
-        st.metric(T["m_ut"], f"{ROD_ut:.3e}", f"{diff_ut:+.2f}%")
-        st.caption(f"{T['c_ut']} {Q_curr:.0f}")
+        st.metric(T["m_ut"], f"{ROD_ut:.4e}", f"{diff_ut:+.2f}%")
+        st.caption(f"{T['c_gwt']} {t_curr_gwt*1000:.2f} {T['unit_mm']} | Q = {Q_curr:.0f}")
     elif opt_em:
-        st.metric(T["m_em"], f"{C_index:.3e}", f"{diff_c:+.2f}%")
-        st.caption(f"{T['c_em']} {D_eff_em*1000:.1f} {T['unit_mm']}")
+        st.metric(T["m_em"], f"{C_index:.4e}", f"{diff_c:+.2f}%")
+        st.caption(f"{T['c_em']} {D_eff_em*1000:.1f} {T['unit_mm']} | ROD_EM = {ROD_em:.4e}")
 
     st.divider()
     st.subheader(T["tbl_header"])
     rows = []
-    for s in range(0, 45, 5):
-        _, t_c, d_eff_c, rod_g, rod_u, rod_e, c_idx = calc_metrics(s)
-        shift_val = ((c_idx - C_index_0) / C_index_0) * 100.0
-
+    # نفس نسب الإكسيل (0% إلى 30% بخطوة 5% ثم 40%)
+    for s in (0, 5, 10, 15, 20, 25, 30, 40):
+        q_s, t_c, d_eff_c, pg_c, nres_g, rod_g, nres_u, rod_u, nres_e, rod_e, gdi_s, c_idx = calc_metrics(s)
+        
         row_dict = {}
         if is_ar:
             row_dict["نسبة العيب (%)"] = f"{s}%"
+            row_dict["معامل الجودة Q"] = round(q_s, 1)
             if opt_gwt:
+                shift_g = ((rod_g - ROD_gwt_0) / ROD_gwt_0) * 100.0
                 row_dict["السُمك المتبقي (مم)"] = round(t_c * 1000, 2)
-                row_dict["ROD (GWT)"] = f"{rod_g:.3e}"
+                row_dict["سعة التخزين N_res"] = f"{nres_g:.3e}"
+                row_dict["ROD (GWT)"] = f"{rod_g:.4e}"
+                row_dict["الانحراف (%)"] = f"{shift_g:+.2f}%"
             elif opt_ut:
+                shift_u = ((rod_u - ROD_ut_0) / ROD_ut_0) * 100.0
                 row_dict["السُمك المتبقي (مم)"] = round(t_c * 1000, 2)
-                row_dict["ROD (UT)"] = f"{rod_u:.3e}"
+                row_dict["سعة التخزين N_res"] = f"{nres_u:.3e}"
+                row_dict["ROD (UT)"] = f"{rod_u:.4e}"
+                row_dict["الانحراف (%)"] = f"{shift_u:+.2f}%"
             elif opt_em:
+                shift_c = ((c_idx - C_index_0) / C_index_0) * 100.0
                 row_dict["القطر الفعلي (مم)"] = round(d_eff_c * 1000, 1)
-                row_dict["مؤشر الانسداد C_index"] = f"{c_idx:.3e}"
-                row_dict["نسبة التغير"] = f"{shift_val:+.1f}%"
+                row_dict["ROD (EM)"] = f"{rod_e:.4e}"
+                row_dict["مؤشر الغاز GDI"] = f"{gdi_s:.3e}"
+                row_dict["مؤشر الانسداد C_index"] = f"{c_idx:.4e}"
+                row_dict["الانحراف (%)"] = f"{shift_c:+.2f}%"
         else:
             row_dict["Defect (%)"] = f"{s}%"
+            row_dict["Quality Factor Q"] = round(q_s, 1)
             if opt_gwt:
+                shift_g = ((rod_g - ROD_gwt_0) / ROD_gwt_0) * 100.0
                 row_dict["Remaining Wall (mm)"] = round(t_c * 1000, 2)
-                row_dict["ROD (GWT)"] = f"{rod_g:.3e}"
+                row_dict["N_res"] = f"{nres_g:.3e}"
+                row_dict["ROD (GWT)"] = f"{rod_g:.4e}"
+                row_dict["Deviation (%)"] = f"{shift_g:+.2f}%"
             elif opt_ut:
+                shift_u = ((rod_u - ROD_ut_0) / ROD_ut_0) * 100.0
                 row_dict["Remaining Wall (mm)"] = round(t_c * 1000, 2)
-                row_dict["ROD (UT)"] = f"{rod_u:.3e}"
+                row_dict["N_res"] = f"{nres_u:.3e}"
+                row_dict["ROD (UT)"] = f"{rod_u:.4e}"
+                row_dict["Deviation (%)"] = f"{shift_u:+.2f}%"
             elif opt_em:
+                shift_c = ((c_idx - C_index_0) / C_index_0) * 100.0
                 row_dict["Effective ID (mm)"] = round(d_eff_c * 1000, 1)
-                row_dict["C_index"] = f"{c_idx:.3e}"
-                row_dict["Shift (%)"] = f"{shift_val:+.1f}%"
+                row_dict["ROD (EM)"] = f"{rod_e:.4e}"
+                row_dict["GDI"] = f"{gdi_s:.3e}"
+                row_dict["C_index"] = f"{c_idx:.4e}"
+                row_dict["Deviation (%)"] = f"{shift_c:+.2f}%"
         rows.append(row_dict)
 
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
 with tab2:
     st.subheader(T["chart_header"])
-    x_vals = list(range(0, 46, 1))
+    x_vals = list(range(0, 41, 1))
     y_vals = []
     for s in x_vals:
-        _, _, _, rod_g, rod_u, _, c_idx = calc_metrics(s)
-        if opt_gwt:
-            y_vals.append(round(((rod_g - ROD_gwt_0) / ROD_gwt_0) * 100.0, 2))
-        elif opt_ut:
-            y_vals.append(round(((rod_u - ROD_ut_0) / ROD_ut_0) * 100.0, 2))
-        elif opt_em:
-            y_vals.append(round(((c_idx - C_index_0) / C_index_0) * 100.0, 2))
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_vals, y=y_vals, mode="lines+markers", name=ndt_choice))
-
-    x_title = "نسبة التآكل / الترسبات (%)" if is_ar else "Corrosion / Scaling Ratio (%)"
-    y_title = "نسبة الانحراف عن الحالة السليمة (%)" if is_ar else "Deviation from Healthy Baseline (%)"
-    fig.update_layout(
-        xaxis_title=x_title,
-        yaxis_title=y_title,
-        height=420
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-with tab3:
-    st.subheader(T["rep_header"])
-
-    if defect_pct < 10:
-        status_ar = "حالة سليمة / مستقرة (ضمن الحدود الآمنة)"
-        rec_ar = "الاستمرار في المراقبة الدورية المجدولة."
-        status_en = "Healthy / Stable Condition (Within safe limits)"
-        rec_en = "Continue routine scheduled NDT monitoring."
-    elif defect_pct < 25:
-        status_ar = "تنبيه مبكر (ترقق ملحوظ في الجدار أو بداية تراكم ترسبات)"
-        rec_ar = "جدولة عملية تنظيف للخط (Pigging) وتكثيف الفحص."
-        status_en = "Early Warning (Noticeable wall thinning or initial scaling)"
-        rec_en = "Schedule pipeline cleaning (Pigging) and increase inspection frequency."
-    else:
-        status_ar = "حالة حرجة (فقد معدني مرتفع أو تضيق شديد في القطر)"
-        rec_ar = "تدخل هندسي عاجل لتخفيض ضغط التشغيل أو استبدال المقطع."
-        status_en = "Critical Condition (Severe metal loss or major diameter restriction)"
-        rec_en = "Immediate engineering intervention required: reduce pressure or replace section."
-
-    if opt_gwt:
-        ind_ar = f"**مؤشر الجهاز (ROD - GWT):** `{ROD_gwt:.3e}` (انحراف: **{diff_gwt:+.2f}%**)"
-        ind_en = f"**Device Indicator (ROD - GWT):** `{ROD_gwt:.3e}` (Shift: **{diff_gwt:+.2f}%**)"
-    elif opt_ut:
-        ind_ar = f"**مؤشر الجهاز (ROD - UT):** `{ROD_ut:.3e}` (انحراف: **{diff_ut:+.2f}%**)"
-        ind_en = f"**Device Indicator (ROD - UT):** `{ROD_ut:.3e}` (Shift: **{diff_ut:+.2f}%**)"
-    else:
-        ind_ar = f"**مؤشر الجهاز (C_index - EM):** `{C_index:.3e}` (انحراف: **{diff_c:+.2f}%**)"
-        ind_en = f"**Device Indicator (C_index - EM):** `{C_index:.3e}` (Shift: **{diff_c:+.2f}%**)"
-
-    if is_ar:
-        report_text = f"""### تقرير فني: تقييم سلامة الأنابيب وفق نظرية الحجم الرنيني الديناميكي (DRVT)
-**إعداد:** د. خالد عبدالفتاح محمد عثمان — معهد مروي التكنولوجي، جامعة مروي التكنولوجية، السودان  
-**الجهاز اللاتلافي المستخدم:** {ndt_choice}
-
----
-
-* **نسبة العيب / الترسبات المرصودة:** {defect_pct}%
-* **التقييم العام للحالة:** {status_ar}
-* {ind_ar}
-* **التوصية الهندسية:** {rec_ar}
-"""
-    else:
-        report_text = f"""### Technical Report: Pipeline Integrity Assessment via DRVT
-**Author:** Dr. Khalid Abdel Fattah Mohamed Osman — Merowe Institute of Technology, Merowe University of Technology, Sudan  
-**NDT Device Used:** {ndt_choice}
-
----
-
-* **Detected Defect / Scaling Ratio:** {defect_pct}%
-* **Overall Condition Status:** {status_en}
-* {ind_en}
-* **Engineering Recommendation:** {rec_en}
-"""
-
