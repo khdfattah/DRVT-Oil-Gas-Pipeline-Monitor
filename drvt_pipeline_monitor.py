@@ -1,15 +1,17 @@
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="DRVT - NDT Pipeline Simulator", layout="wide")
+st.set_page_config(page_title="DRVT - NDT Pipeline Monitor", layout="wide")
 
+# زر اختيار اللغة
 lang = st.sidebar.radio(
     "🌐 Language / اللغة", ("العربية", "English"), horizontal=True
 )
 is_ar = lang == "العربية"
 
+# ضبط اتجاه الصفحة
 if is_ar:
   st.markdown(
       "<style>.main, .stSidebar { direction: rtl; text-align: right; } h1, h2,"
@@ -23,37 +25,47 @@ else:
       unsafe_allow_html=True,
   )
 
+# قاموس النصوص
 T = {
     "title": (
-        "🔬 محاكاة نظرية الحجم الرنيني الديناميكي (DRVT) لفحص الأنابيب (NDT)"
+        "🔬 نظام مراقبة سلامة الأنابيب بنظرية الحجم الرنيني الديناميكي (DRVT)"
         if is_ar
-        else (
-            "🔬 Dynamic Resonant Volume Theory (DRVT) Simulator for Pipeline NDT"
-        )
+        else "🔬 DRVT Pipeline Integrity Monitoring System (NDT)"
     ),
     "author_box": (
-        "**إعداد وتطوير:** د. خالد عبد الفتاح | معهد مروي التكنولوجي، جامعة"
-        " مروي التكنولوجية، السودان (`khdfattah@gmail.com`)"
+        "**إعداد وتطوير:** د. خالد عبدالفتاح محمد عثمان | معهد مروي التكنولوجي،"
+        " جامعة مروي التكنولوجية، السودان (`khdfattah@gmail.com`)"
         if is_ar
         else (
-            "**Author:** Dr. Khalid Abdel Fattah | Merowe Institute of"
-            " Technology, Merowe University of Technology, Sudan"
+            "**Author:** Dr. Khalid Abdel Fattah Mohamed Osman | Merowe"
+            " Institute of Technology, Merowe University of Technology, Sudan"
             " (`khdfattah@gmail.com`)"
         )
     ),
-    "subtitle": (
-        "أداة تفاعلية لحساب **كثافة الإشغال الرنيني (ROD)** ومؤشرات التآكل"
-        " والترسبات في أنابيب النفط والغاز."
+    "sb_header": (
+        "⚙️ إعدادات الفحص والأنبوب"
+        if is_ar
+        else "⚙️ Inspection & Pipeline Settings"
+    ),
+    "ndt_select_label": (
+        "🔍 اختر تقنية الفحص (NDT):"
+        if is_ar
+        else "🔍 Select NDT Inspection Method:"
+    ),
+    "ndt_options": (
+        (
+            "الكل (مقارنة شاملة)",
+            "الموجات الموجهة (GWT)",
+            "الموجات فوق الصوتية (UT)",
+            "الميكروويف الداخلي (EM)",
+        )
         if is_ar
         else (
-            "An interactive tool to compute **Resonant Occupancy Density"
-            " (ROD)**, corrosion, and scaling indices in oil & gas pipelines."
+            "All Methods (Comparison)",
+            "Guided Wave Testing (GWT)",
+            "Ultrasonic Thickness (UT)",
+            "Internal Microwave (EM)",
         )
-    ),
-    "sb_header": (
-        "⚙️ مدخلات الأنبوب وجهاز الفحص"
-        if is_ar
-        else "⚙️ Pipeline & NDT Inputs"
     ),
     "sb_pipe": (
         "1. أبعاد الأنبوب القياسي"
@@ -69,9 +81,7 @@ T = {
     "l_m": (
         "طول المقطع المفحوص (متر)" if is_ar else "Inspected Section Length L (m)"
     ),
-    "sb_ndt": (
-        "2. إعدادات جهاز الفحص (NDT)" if is_ar else "2. NDT Device Settings"
-    ),
+    "sb_ndt": "2. معاملات جهاز الفحص" if is_ar else "2. NDT Device Parameters",
     "p_watt": "قدرة الإرسال P (واط)" if is_ar else "Transmitted Power P (W)",
     "q_base": (
         "معامل الجودة المرجعي Q₀" if is_ar else "Baseline Quality Factor Q₀"
@@ -109,13 +119,13 @@ T = {
         (
             "📊 لوحة المحاكاة والنتائج",
             "📈 الرسوم البيانية",
-            "📖 المعادلات والرموز",
+            "📄 التقرير الفني",
         )
         if is_ar
         else (
             "📊 Simulation Dashboard",
-            "📈 Response Curves",
-            "📖 Equations & Nomenclature",
+            "📈 Response Charts",
+            "📄 Technical Report",
         )
     ),
     "res_header": (
@@ -150,18 +160,30 @@ T = {
         if is_ar
         else "DRVT Indicators Response vs. Corrosion & Scaling Progression"
     ),
-    "eq_header": (
-        "المعادلات المشتقة ودليل الرموز"
+    "rep_header": (
+        "التقرير الفني لحالة مراقبة الأنابيب"
         if is_ar
-        else "Derived Equations & Nomenclature"
+        else "Technical Pipeline Integrity Report"
+    ),
+    "dl_btn": (
+        "📥 تحميل التقرير الفني (ملف نصي)"
+        if is_ar
+        else "📥 Download Technical Report (.txt)"
     ),
 }
 
 st.title(T["title"])
 st.info(T["author_box"])
-st.markdown(T["subtitle"])
 
+# الشريط الجانبي
 st.sidebar.header(T["sb_header"])
+ndt_choice = st.sidebar.selectbox(T["ndt_select_label"], T["ndt_options"])
+
+# تحديد الخيار المختار برمجياً
+opt_all = ndt_choice == T["ndt_options"][0]
+opt_gwt = ndt_choice == T["ndt_options"][1]
+opt_ut = ndt_choice == T["ndt_options"][2]
+opt_em = ndt_choice == T["ndt_options"][3]
 
 st.sidebar.subheader(T["sb_pipe"])
 D_out_inch = st.sidebar.number_input(T["d_out"], value=12.75, step=0.25)
@@ -171,15 +193,28 @@ L_m = st.sidebar.number_input(T["l_m"], value=10.0, step=1.0)
 st.sidebar.subheader(T["sb_ndt"])
 P_watt = st.sidebar.number_input(T["p_watt"], value=50.0, step=5.0)
 Q_base = st.sidebar.number_input(T["q_base"], value=1000.0, step=100.0)
-f_gwt_khz = st.sidebar.number_input(T["f_gwt"], value=32.0)
-f_ut_mhz = st.sidebar.number_input(T["f_ut"], value=5.0)
-f_em_ghz = st.sidebar.number_input(T["f_em"], value=2.4)
+
+f_gwt_khz = 32.0
+f_ut_mhz = 5.0
+f_em_ghz = 2.4
+
+if opt_all or opt_gwt:
+  f_gwt_khz = st.sidebar.number_input(T["f_gwt"], value=32.0)
+if opt_all or opt_ut:
+  f_ut_mhz = st.sidebar.number_input(T["f_ut"], value=5.0)
+if opt_all or opt_em:
+  f_em_ghz = st.sidebar.number_input(T["f_em"], value=2.4)
 
 st.sidebar.subheader(T["sb_op"])
-Pg_bar = st.sidebar.number_input(T["pg_bar"], value=50.0, step=5.0)
-eps_r = st.sidebar.number_input(T["eps_r"], value=1.05, step=0.01)
+Pg_bar = 50.0
+eps_r = 1.05
+if opt_all or opt_em:
+  Pg_bar = st.sidebar.number_input(T["pg_bar"], value=50.0, step=5.0)
+  eps_r = st.sidebar.number_input(T["eps_r"], value=1.05, step=0.01)
+
 defect_pct = st.sidebar.slider(T["defect"], 0, 50, 15)
 
+# الثوابت الفيزيائية
 V_eq_nm3 = 286.398
 V_eq_m3 = V_eq_nm3 * 1e-27
 h = 6.6261e-34
@@ -192,64 +227,77 @@ t_nom = t_nom_mm / 1000.0
 D_in = D_out - 2 * t_nom
 Pg_pa = Pg_bar * 100000.0
 
+# الحسابات الأساسية
+ratio = defect_pct / 100.0
+Q_curr = Q_base * (1 - 0.5 * ratio)
+
+# 1. GWT
+t_curr_gwt = t_nom * (1 - ratio)
+D_in_curr_gwt = D_out - 2 * t_curr_gwt
+V_cav_gwt = (np.pi / 4) * L_m * (D_out**2 - D_in_curr_gwt**2)
+N_res_gwt = V_cav_gwt / V_eq_m3
+lam_gwt = v_s / (f_gwt_khz * 1000)
+N_wav_gwt = (P_watt * Q_curr * (lam_gwt**2)) / (2 * np.pi * h * (c**2))
+ROD_gwt = N_wav_gwt / N_res_gwt
+
+V_cav_gwt_0 = (np.pi / 4) * L_m * (D_out**2 - D_in**2)
+N_wav_gwt_0 = (P_watt * Q_base * (lam_gwt**2)) / (2 * np.pi * h * (c**2))
+ROD_gwt_0 = N_wav_gwt_0 / (V_cav_gwt_0 / V_eq_m3)
+diff_gwt = ((ROD_gwt - ROD_gwt_0) / ROD_gwt_0) * 100
+
+# 2. UT
+V_cav_ut = (np.pi / 4) * (d_p**2) * t_curr_gwt
+N_res_ut = V_cav_ut / V_eq_m3
+lam_ut = v_s / (f_ut_mhz * 1e6)
+N_wav_ut = (P_watt * Q_curr * (lam_ut**2)) / (2 * np.pi * h * (c**2))
+ROD_ut = N_wav_ut / N_res_ut
+
+V_cav_ut_0 = (np.pi / 4) * (d_p**2) * t_nom
+N_wav_ut_0 = (P_watt * Q_base * (lam_ut**2)) / (2 * np.pi * h * (c**2))
+ROD_ut_0 = N_wav_ut_0 / (V_cav_ut_0 / V_eq_m3)
+diff_ut = ((ROD_ut - ROD_ut_0) / ROD_ut_0) * 100
+
+# 3. EM
+D_eff_em = D_in * (1 - ratio)
+Pg_curr = Pg_pa * (1 + 0.4 * ratio)
+V_cav_em = (np.pi / 4) * (D_eff_em**2) * L_m
+N_res_em = V_cav_em / V_eq_m3
+lam_em = c / ((f_em_ghz * 1e9) * np.sqrt(eps_r))
+N_ph_em = (P_watt * Q_curr * (lam_em**2)) / (2 * np.pi * h * (c**2))
+ROD_em = N_ph_em / N_res_em
+GDI_curr = 14369.0 / Pg_curr
+C_index = ROD_em / GDI_curr
+
+V_cav_em_0 = (np.pi / 4) * (D_in**2) * L_m
+N_ph_em_0 = (P_watt * Q_base * (lam_em**2)) / (2 * np.pi * h * (c**2))
+ROD_em_0 = N_ph_em_0 / (V_cav_em_0 / V_eq_m3)
+C_index_0 = ROD_em_0 / (14369.0 / Pg_pa)
+diff_c = ((C_index - C_index_0) / C_index_0) * 100
+
+# التبويبات
 tab1, tab2, tab3 = st.tabs(T["tabs"])
 
 with tab1:
-  ratio = defect_pct / 100.0
-  Q_curr = Q_base * (1 - 0.5 * ratio)
-
-  t_curr_gwt = t_nom * (1 - ratio)
-  D_in_curr_gwt = D_out - 2 * t_curr_gwt
-  V_cav_gwt = (np.pi / 4) * L_m * (D_out**2 - D_in_curr_gwt**2)
-  N_res_gwt = V_cav_gwt / V_eq_m3
-  lam_gwt = v_s / (f_gwt_khz * 1000)
-  N_wav_gwt = (P_watt * Q_curr * (lam_gwt**2)) / (2 * np.pi * h * (c**2))
-  ROD_gwt = N_wav_gwt / N_res_gwt
-
-  V_cav_gwt_0 = (np.pi / 4) * L_m * (D_out**2 - D_in**2)
-  N_wav_gwt_0 = (P_watt * Q_base * (lam_gwt**2)) / (2 * np.pi * h * (c**2))
-  ROD_gwt_0 = N_wav_gwt_0 / (V_cav_gwt_0 / V_eq_m3)
-
-  V_cav_ut = (np.pi / 4) * (d_p**2) * t_curr_gwt
-  N_res_ut = V_cav_ut / V_eq_m3
-  lam_ut = v_s / (f_ut_mhz * 1e6)
-  N_wav_ut = (P_watt * Q_curr * (lam_ut**2)) / (2 * np.pi * h * (c**2))
-  ROD_ut = N_wav_ut / N_res_ut
-
-  V_cav_ut_0 = (np.pi / 4) * (d_p**2) * t_nom
-  N_wav_ut_0 = (P_watt * Q_base * (lam_ut**2)) / (2 * np.pi * h * (c**2))
-  ROD_ut_0 = N_wav_ut_0 / (V_cav_ut_0 / V_eq_m3)
-
-  D_eff_em = D_in * (1 - ratio)
-  Pg_curr = Pg_pa * (1 + 0.4 * ratio)
-  V_cav_em = (np.pi / 4) * (D_eff_em**2) * L_m
-  N_res_em = V_cav_em / V_eq_m3
-  lam_em = c / ((f_em_ghz * 1e9) * np.sqrt(eps_r))
-  N_ph_em = (P_watt * Q_curr * (lam_em**2)) / (2 * np.pi * h * (c**2))
-  ROD_em = N_ph_em / N_res_em
-  GDI_curr = 14369.0 / Pg_curr
-  C_index = ROD_em / GDI_curr
-
-  V_cav_em_0 = (np.pi / 4) * (D_in**2) * L_m
-  N_ph_em_0 = (P_watt * Q_base * (lam_em**2)) / (2 * np.pi * h * (c**2))
-  ROD_em_0 = N_ph_em_0 / (V_cav_em_0 / V_eq_m3)
-  C_index_0 = ROD_em_0 / (14369.0 / Pg_pa)
-
   st.subheader(f"{T['res_header']} {defect_pct}%")
-  col1, col2, col3 = st.columns(3)
 
-  with col1:
-    diff_gwt = ((ROD_gwt - ROD_gwt_0) / ROD_gwt_0) * 100
+  if opt_all:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+      st.metric(T["m_gwt"], f"{ROD_gwt:.3e}", f"{diff_gwt:+.2f}%")
+      st.caption(f"{T['c_gwt']} {t_curr_gwt*1000:.2f} {T['unit_mm']}")
+    with col2:
+      st.metric(T["m_ut"], f"{ROD_ut:.3e}", f"{diff_ut:+.2f}%")
+      st.caption(f"{T['c_ut']} {Q_curr:.0f}")
+    with col3:
+      st.metric(T["m_em"], f"{C_index:.3e}", f"{diff_c:+.2f}%")
+      st.caption(f"{T['c_em']} {D_eff_em*1000:.1f} {T['unit_mm']}")
+  elif opt_gwt:
     st.metric(T["m_gwt"], f"{ROD_gwt:.3e}", f"{diff_gwt:+.2f}%")
     st.caption(f"{T['c_gwt']} {t_curr_gwt*1000:.2f} {T['unit_mm']}")
-
-  with col2:
-    diff_ut = ((ROD_ut - ROD_ut_0) / ROD_ut_0) * 100
+  elif opt_ut:
     st.metric(T["m_ut"], f"{ROD_ut:.3e}", f"{diff_ut:+.2f}%")
     st.caption(f"{T['c_ut']} {Q_curr:.0f}")
-
-  with col3:
-    diff_c = ((C_index - C_index_0) / C_index_0) * 100
+  elif opt_em:
     st.metric(T["m_em"], f"{C_index:.3e}", f"{diff_c:+.2f}%")
     st.caption(f"{T['c_em']} {D_eff_em*1000:.1f} {T['unit_mm']}")
 
@@ -269,36 +317,3 @@ with tab1:
         ((np.pi / 4) * L_m * (D_out**2 - d_in_c**2)) / V_eq_m3
     )
     rod_u = ((P_watt * q * (lam_ut**2)) / (2 * np.pi * h * (c**2))) / (
-        ((np.pi / 4) * (d_p**2) * t_c) / V_eq_m3
-    )
-    rod_e = ((P_watt * q * (lam_em**2)) / (2 * np.pi * h * (c**2))) / (
-        ((np.pi / 4) * (d_eff_c**2) * L_m) / V_eq_m3
-    )
-    c_idx = rod_e / (14369.0 / pg_c)
-    shift_val = ((c_idx - C_index_0) / C_index_0) * 100
-
-    row_dict = {}
-    if is_ar:
-      row_dict["نسبة العيب (%)"] = f"{s}%"
-      row_dict["السُمك المتبقي (مم)"] = round(t_c * 1000, 2)
-      row_dict["القطر الفعلي (مم)"] = round(d_eff_c * 1000, 1)
-      row_dict["ROD (GWT)"] = f"{rod_g:.3e}"
-      row_dict["ROD (UT)"] = f"{rod_u:.3e}"
-      row_dict["ROD (EM)"] = f"{rod_e:.3e}"
-      row_dict["مؤشر الانسداد C_index"] = f"{c_idx:.3e}"
-      row_dict["تغير مؤشر الانسداد"] = f"{shift_val:+.1f}%"
-    else:
-      row_dict["Defect (%)"] = f"{s}%"
-      row_dict["Remaining Wall (mm)"] = round(t_c * 1000, 2)
-      row_dict["Effective ID (mm)"] = round(d_eff_c * 1000, 1)
-      row_dict["ROD (GWT)"] = f"{rod_g:.3e}"
-      row_dict["ROD (UT)"] = f"{rod_u:.3e}"
-      row_dict["ROD (EM)"] = f"{rod_e:.3e}"
-      row_dict["C_index"] = f"{c_idx:.3e}"
-      row_dict["C_index Shift"] = f"{shift_val:+.1f}%"
-    rows.append(row_dict)
-
-  st.dataframe(pd.DataFrame(rows), use_container_width=True)
-
-with tab2:
-  st.subheader(T["chart_header"])
